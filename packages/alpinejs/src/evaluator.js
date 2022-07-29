@@ -62,9 +62,7 @@ function generateFunctionFromString(expression, el) {
     if (evaluatorMemo[expression]) {
         return evaluatorMemo[expression]
     }
-
     let AsyncFunction = Object.getPrototypeOf(async function(){}).constructor
-
     // Some expressions that are useful in Alpine are not valid as the right side of an expression.
     // Here we'll detect if the expression isn't valid for an assignement and wrap it in a self-
     // calling function so that we don't throw an error AND a "return" statement can b e used.
@@ -72,24 +70,18 @@ function generateFunctionFromString(expression, el) {
         // Support expressions starting with "if" statements like: "if (...) doSomething()"
         || /^[\n\s]*if.*\(.*\)/.test(expression)
         // Support expressions starting with "let/const" like: "let foo = 'bar'"
-        || /^(let|const)\s/.test(expression)
+        || /^(let|const)/.test(expression)
             ? `(() => { ${expression} })()`
             : expression
-
-    const safeAsyncFunction = () => {
-        try {
-            return new AsyncFunction(['__self', 'scope'], `with (scope) { __self.result = ${rightSideSafeExpression} }; __self.finished = true; return __self.result;`)
-        } catch ( error ) {
-            handleError( error, el, expression )
-            return Promise.resolve()
-        }
-    }
-    let func = safeAsyncFunction()
-
+  
+    let func = new AsyncFunction(['__self', 'scope'], `with (scope) { __self.result = ${rightSideSafeExpression} }; __self.finished = true; return __self.result;`)
+    
     evaluatorMemo[expression] = func
-
+  
     return func
 }
+  
+  
 
 function generateEvaluatorFromString(dataStack, expression, el) {
     let func = generateFunctionFromString(expression, el)
